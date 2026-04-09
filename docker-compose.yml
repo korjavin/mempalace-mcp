@@ -1,0 +1,59 @@
+version: "3.9"
+
+# ─────────────────────────────────────────────────────────────────────────────
+#  MemPalace Bridge — docker-compose
+#
+#  Ports
+#  ─────
+#  7891  MCP SSE endpoint  →  expose via Cloudflare Tunnel
+#  7892  Admin portal      →  internal network only (never add to CF Tunnel)
+#
+#  Volume
+#  ──────
+#  /opt/mempalace on the host is the single source of truth.
+#  The ChromaDB palace data and the token DB both live there.
+#  Back up /opt/mempalace and you back up everything.
+#
+#  Env vars (override in .env or in environment: below)
+#  ────────────────────────────────────────────────────
+#  ADMIN_USER       admin username          (default: admin)
+#  ADMIN_PASSWORD   admin password          (CHANGE THIS)
+# ─────────────────────────────────────────────────────────────────────────────
+
+services:
+
+  # ── MCP Bridge ─────────────────────────────────────────────────────────────
+  mcp:
+    build: .
+    command: python mcp_bridge.py
+    restart: unless-stopped
+    ports:
+      - "0.0.0.0:7891:7891"          # reachable from Cloudflare Tunnel
+    volumes:
+      - /opt/mempalace:/palace       # host path → container mount
+    environment:
+      PALACE_PATH: /palace/data      # ChromaDB palace lives here
+      DB_PATH:     /palace/tokens.db # shared token DB
+      MCP_PORT:    "7891"
+    healthcheck:
+      test:  ["CMD", "curl", "-f", "http://localhost:7891/health"]
+      interval: 30s
+      timeout:  5s
+      retries:  3
+
+  # ── Admin Portal ────────────────────────────────────────────────────────────
+  admin:
+    build: .
+    command: python admin_server.py
+    restart: unless-stopped
+    ports:
+      - "0.0.0.0:7892:7892"          # internal network only — NOT via CF Tunnel
+    volumes:
+      - /opt/mempalace:/palace       # same volume — same tokens.db
+    environment:
+      DB_PATH:        /palace/tokens.db
+      ADMIN_PORT:     "7892"
+      ADMIN_USER:     "${ADMIN_USER:-admin}"
+      ADMIN_PASSWORD: "${ADMIN_PASSWORD:-changeme}"   # override via .env !
+    depends_on:
+      - mcp
