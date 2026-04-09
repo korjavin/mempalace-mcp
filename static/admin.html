@@ -730,14 +730,29 @@
 
   async function copyToken() {
     const token = document.getElementById('tokenReveal').textContent;
-    await navigator.clipboard.writeText(token);
-    const btn = document.getElementById('copyBtn');
-    btn.textContent = '✓ Copied!';
-    btn.classList.add('copied');
-    setTimeout(() => {
-      btn.textContent = 'Copy Token';
-      btn.classList.remove('copied');
-    }, 2000);
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(token);
+      } else {
+        const ta = document.createElement('textarea');
+        ta.value = token;
+        ta.style.position = 'fixed';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+      }
+      const btn = document.getElementById('copyBtn');
+      btn.textContent = '✓ Copied!';
+      btn.classList.add('copied');
+      setTimeout(() => {
+        btn.textContent = 'Copy Token';
+        btn.classList.remove('copied');
+      }, 2000);
+    } catch (e) {
+      showToast('Copy failed — select and copy manually', 'error');
+    }
   }
 
   // ── Toast ─────────────────────────────────────────────────────
