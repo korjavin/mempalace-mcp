@@ -78,7 +78,7 @@ nano .env          # set ADMIN_PASSWORD to something strong
 Run the init command inside the container (no need to install anything on the host):
 
 ```bash
-docker run --rm -v /opt/mempalace:/palace \
+echo "" | docker run --rm -i -v /opt/mempalace:/palace \
   ghcr.io/carlosvargasvip/mempalace-mcp:latest \
   mempalace init /palace/data
 ```
@@ -166,7 +166,7 @@ Before the MCP bridge can serve requests, the data store must be initialized.
 Run this from the Portainer host or via **Containers → mcp → Console**:
 
 ```bash
-docker run --rm -v /opt/mempalace:/palace \
+echo "" | docker run --rm -i -v /opt/mempalace:/palace \
   ghcr.io/carlosvargasvip/mempalace-mcp:latest \
   mempalace init /palace/data
 ```

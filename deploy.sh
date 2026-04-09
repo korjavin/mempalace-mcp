@@ -55,7 +55,7 @@ docker pull "$IMAGE"
 # ── 4. Initialize palace ────────────────────────────────────────────────────
 if [ -z "$(ls -A "$DATA_DIR" 2>/dev/null)" ]; then
     info "Initializing MemPalace data store..."
-    docker run --rm -v "$PALACE_DIR:/palace" "$IMAGE" mempalace init /palace/data
+    echo "" | docker run --rm -i -v "$PALACE_DIR:/palace" "$IMAGE" mempalace init /palace/data
 else
     info "Palace already initialized"
 fi
