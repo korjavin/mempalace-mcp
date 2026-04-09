@@ -58,6 +58,8 @@ docker pull "$IMAGE"
 if [ ! -f "$DATA_DIR/mempalace.yaml" ]; then
     info "Initializing MemPalace data store..."
     echo "" | docker run --rm -i -v "$PALACE_DIR:/palace" "$IMAGE" mempalace init /palace/data
+    info "Building ChromaDB index..."
+    docker run --rm -v "$PALACE_DIR:/palace" "$IMAGE" mempalace mine /palace/data
 else
     info "Palace already initialized"
 fi
