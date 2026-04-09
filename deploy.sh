@@ -55,7 +55,7 @@ info "Pulling $IMAGE..."
 docker pull "$IMAGE"
 
 # ── 4. Initialize palace ────────────────────────────────────────────────────
-if [ -z "$(ls -A "$DATA_DIR" 2>/dev/null)" ]; then
+if [ ! -f "$DATA_DIR/mempalace.yaml" ]; then
     info "Initializing MemPalace data store..."
     echo "" | docker run --rm -i -v "$PALACE_DIR:/palace" "$IMAGE" mempalace init /palace/data
 else
