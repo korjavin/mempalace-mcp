@@ -34,9 +34,11 @@ fi
 # ── 2. Environment file ─────────────────────────────────────────────────────
 if [ ! -f .env ]; then
     PASSWORD=$(openssl rand -base64 24 | tr -d '/+=' | head -c 24)
+    read -rp "  Public URL for OAuth (e.g. https://mempalace.yourdomain.com): " PUB_URL
     cat > .env <<EOF
 ADMIN_USER=admin
 ADMIN_PASSWORD=$PASSWORD
+PUBLIC_URL=$PUB_URL
 EOF
     info "Generated .env"
     echo ""
