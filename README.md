@@ -115,6 +115,7 @@ docker compose up -d
    |------------------|----------------------------|
    | `ADMIN_USER`     | `admin`                    |
    | `ADMIN_PASSWORD` | *(your strong password)*   |
+   | `PUBLIC_URL`     | `https://mempalace.yourdomain.com` |
 4. Click **Deploy the stack**
 
 ### Manual compose paste
@@ -135,6 +136,9 @@ services:
       PALACE_PATH: /palace/data
       DB_PATH: /palace/tokens.db
       MCP_PORT: "7891"
+      ADMIN_USER: ${ADMIN_USER:-admin}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-changeme}
+      PUBLIC_URL: ${PUBLIC_URL:-}
     healthcheck:
       test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:7891/health')"]
       interval: 30s
@@ -206,10 +210,22 @@ Port 7892 (admin) must **never** be added to the tunnel.
 
 ### Add to Claude.ai
 
-Settings → Integrations → Add MCP Server:
+The bridge supports OAuth 2.1 with PKCE — Claude.ai handles the flow automatically.
+
+1. Go to **Settings → Integrations → Add MCP Server**
+2. Enter the URL: `https://mempalace.yourdomain.com/sse`
+3. Claude.ai will open a consent page — enter your **admin password** to approve
+4. Done — Claude.ai now has a token and can use all 19 MemPalace tools
+
+OAuth tokens appear in the admin portal with the label `oauth:Claude.ai` and can be revoked like any other token.
+
+### Add to Claude Desktop or other clients (Bearer token)
+
+Clients that support custom headers can use Bearer tokens directly (no OAuth needed).
+Create a token in the admin portal, then configure:
+
 - **URL**: `https://mempalace.yourdomain.com/sse`
-- **Header name**: `Authorization`
-- **Header value**: `Bearer mp_YOUR_TOKEN`
+- **Header**: `Authorization: Bearer mp_YOUR_TOKEN`
 
 ---
 

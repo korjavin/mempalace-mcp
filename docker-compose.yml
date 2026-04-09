@@ -30,9 +30,12 @@ services:
     volumes:
       - /opt/mempalace:/palace       # host path → container mount
     environment:
-      PALACE_PATH: /palace/data      # ChromaDB palace lives here
-      DB_PATH:     /palace/tokens.db # shared token DB
-      MCP_PORT:    "7891"
+      PALACE_PATH:    /palace/data      # ChromaDB palace lives here
+      DB_PATH:        /palace/tokens.db # shared token DB
+      MCP_PORT:       "7891"
+      ADMIN_USER:     "${ADMIN_USER:-admin}"
+      ADMIN_PASSWORD: "${ADMIN_PASSWORD:-changeme}"
+      PUBLIC_URL:     "${PUBLIC_URL:-}"  # e.g. https://mempalace.yourdomain.com
     healthcheck:
       test:  ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:7891/health')"]
       interval: 30s

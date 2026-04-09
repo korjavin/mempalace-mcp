@@ -50,13 +50,31 @@ Two FastAPI services sharing a SQLite database and ChromaDB volume:
 
 **Shared state:** Both services read/write `/palace/tokens.db` (SQLite). ChromaDB data lives at `/palace/data`. Host volume is `/opt/mempalace`.
 
+## Authentication
+
+Two auth methods, both produce the same `mp_*` Bearer tokens stored in SQLite:
+
+- **OAuth 2.1 + PKCE** — For Claude.ai and clients that require OAuth. Endpoints on mcp_bridge.py:
+  - `GET /.well-known/oauth-protected-resource` — RFC 9728 discovery
+  - `GET /.well-known/oauth-authorization-server` — RFC 8414 metadata
+  - `POST /register` — Dynamic Client Registration (RFC 7591)
+  - `GET /authorize` — Consent page (admin password required)
+  - `POST /authorize` — Processes consent, issues auth code
+  - `POST /token` — Exchanges auth code + PKCE verifier for `mp_*` token
+- **Direct Bearer** — For Claude Desktop, Cursor, n8n. Token created in admin portal.
+
+OAuth-issued tokens appear in the admin portal labeled `oauth:<client_name>` and are revocable.
+
+The `/sse` endpoint returns `401` with `WWW-Authenticate` header when unauthenticated, triggering the OAuth discovery chain. Claude.ai hardcodes `/authorize` and `/token` paths (ignores metadata URLs).
+
 ## Configuration
 
 Environment variables via `.env` (see `.env.example`):
-- `ADMIN_USER` / `ADMIN_PASSWORD` — HTTP Basic auth for admin portal
+- `ADMIN_USER` / `ADMIN_PASSWORD` — Admin portal auth + OAuth consent page
 - `PALACE_PATH` — ChromaDB data directory (default: `/palace/data`)
 - `DB_PATH` — SQLite token database (default: `/palace/tokens.db`)
 - `MCP_PORT` / `ADMIN_PORT` — Service ports (defaults: 7891 / 7892)
+- `PUBLIC_URL` — Public HTTPS URL for OAuth discovery (e.g. `https://mempalace.yourdomain.com`). Falls back to `X-Forwarded-*` headers from Cloudflare Tunnel.
 
 ## Key Constraints
 
@@ -65,3 +83,4 @@ Environment variables via `.env` (see `.env.example`):
 - Port 7892 must stay internal (admin access only)
 - The `mempalace` package is an external dependency installed via pip
 - Docker-first: all deployment uses docker-compose with a single shared host volume
+- OAuth DB tables (`oauth_clients`, `oauth_auth_codes`) share the same `tokens.db`
