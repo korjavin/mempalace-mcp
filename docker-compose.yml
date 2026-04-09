@@ -1,5 +1,3 @@
-version: "3.9"
-
 # ─────────────────────────────────────────────────────────────────────────────
 #  MemPalace Bridge — docker-compose
 #
@@ -24,7 +22,7 @@ services:
 
   # ── MCP Bridge ─────────────────────────────────────────────────────────────
   mcp:
-    build: .
+    image: ghcr.io/carlosvargasvip/mempalace-mcp:latest
     command: python mcp_bridge.py
     restart: unless-stopped
     ports:
@@ -36,14 +34,14 @@ services:
       DB_PATH:     /palace/tokens.db # shared token DB
       MCP_PORT:    "7891"
     healthcheck:
-      test:  ["CMD", "curl", "-f", "http://localhost:7891/health"]
+      test:  ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:7891/health')"]
       interval: 30s
       timeout:  5s
       retries:  3
 
   # ── Admin Portal ────────────────────────────────────────────────────────────
   admin:
-    build: .
+    image: ghcr.io/carlosvargasvip/mempalace-mcp:latest
     command: python admin_server.py
     restart: unless-stopped
     ports:

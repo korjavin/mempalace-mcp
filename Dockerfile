@@ -1,24 +1,32 @@
-FROM python:3.12-slim
+# ── Builder ──────────────────────────────────────────────────────────────────
+FROM python:3.12-slim AS builder
 
-# System deps
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    git \
+        git build-essential \
     && rm -rf /var/lib/apt/lists/*
 
-WORKDIR /app
+RUN python -m venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
 
-# Python deps
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# App files
+# ── Runtime ──────────────────────────────────────────────────────────────────
+FROM python:3.12-slim
+
+# onnxruntime (chromadb dep) needs libgomp at runtime
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        libgomp1 \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY --from=builder /opt/venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
+
+WORKDIR /app
 COPY mcp_bridge.py   .
 COPY admin_server.py .
 COPY static/         ./static/
 
-# Palace directory — this is where the volume mounts.
-# Data NEVER lives in the image; it lives on the host.
 RUN mkdir -p /palace/data
 
-# Two ports: 7891 = MCP, 7892 = Admin
 EXPOSE 7891 7892

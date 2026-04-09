@@ -1,0 +1,7 @@
+.env
+.git
+*.md
+LICENSE
+deploy.sh
+__pycache__
+*.pyc
