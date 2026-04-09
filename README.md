@@ -193,7 +193,7 @@ When a new image is pushed:
 
 These steps are the same regardless of which deployment option you used.
 
-### Open the admin portal
+### 1. Open the admin portal
 
 From any machine on your LAN:
 
@@ -201,27 +201,82 @@ From any machine on your LAN:
 http://<SERVER-LAN-IP>:7892
 ```
 
-Log in → **Issue Token** → label it `claude.ai` → copy the token.
+Log in with the `ADMIN_USER` / `ADMIN_PASSWORD` credentials from your `.env` file.
 
-### Configure Cloudflare Tunnel
+### 2. Configure Cloudflare Tunnel
 
-Follow **[CLOUDFLARE_SETUP.md](CLOUDFLARE_SETUP.md)** to expose port 7891 at your subdomain.
-Port 7892 (admin) must **never** be added to the tunnel.
+Follow **[CLOUDFLARE_SETUP.md](CLOUDFLARE_SETUP.md)** to expose port 7891 at your subdomain (e.g. `https://mempalace.yourdomain.com`).
 
-### Add to Claude.ai
+> **Security:** Port 7892 (admin portal) must **never** be added to the tunnel — it should only be accessible on your local network.
 
-The bridge supports OAuth 2.1 with PKCE — Claude.ai handles the flow automatically.
+### 3. Connect your AI clients
+
+MemPalace Bridge supports two authentication methods. Choose the one that matches your client.
+
+---
+
+#### Method A — OAuth 2.1 with PKCE (automatic)
+
+**For clients that handle OAuth natively** — they discover endpoints, open a consent page, and receive a token automatically. No manual token creation needed.
+
+| Client | OAuth Support |
+|--------|--------------|
+| Claude.ai (web) | Yes — built-in |
+| Any MCP client with OAuth 2.1 | Yes |
+
+**How it works:**
+
+1. The client connects to `https://mempalace.yourdomain.com/sse`
+2. The bridge returns `401` with a `WWW-Authenticate` header
+3. The client discovers OAuth endpoints via `/.well-known/oauth-authorization-server`
+4. A consent page opens — you enter your **admin password** to approve
+5. The client receives an `mp_*` token automatically
+
+**Claude.ai setup:**
 
 1. Go to **Settings → Integrations → Add MCP Server**
-2. Enter the URL: `https://mempalace.yourdomain.com/sse`
-3. Claude.ai will open a consent page — enter your **admin password** to approve
-4. Done — Claude.ai now has a token and can use all 19 MemPalace tools
+2. Enter the server URL:
+   ```
+   https://mempalace.yourdomain.com/sse
+   ```
+3. Claude.ai opens the consent page — enter your **admin password** and approve
+4. Done — all 19 MemPalace tools are now available in your conversations
 
-OAuth tokens appear in the admin portal with the label `oauth:Claude.ai` and can be revoked like any other token.
+OAuth-issued tokens appear in the admin portal labeled `oauth:<client_name>` and can be revoked at any time.
 
-### Add to Claude Code (CLI)
+---
 
-Create a token in the admin portal labeled `claude-code`, then use one of these methods:
+#### Method B — Bearer Token (manual)
+
+**For clients that authenticate via static headers** — you create a token in the admin portal and configure the client with it directly. No OAuth flow involved.
+
+| Client | Auth Method |
+|--------|------------|
+| Claude Code (CLI) | Bearer token via header |
+| Claude Desktop | Bearer token via header |
+| Cursor | Bearer token via header |
+| n8n | Bearer token via header |
+| Any HTTP client | Bearer token via header |
+
+**Step 1 — Create a token:**
+
+1. Open the admin portal at `http://<SERVER-LAN-IP>:7892`
+2. Click **Issue Token**
+3. Give it a descriptive label (e.g. `claude-code`, `cursor`, `n8n-prod`)
+4. Copy the generated `mp_*` token — it is only shown once
+
+**Step 2 — Configure your client:**
+
+Every token-based client needs two values:
+
+- **URL:** `https://mempalace.yourdomain.com/sse`
+- **Header:** `Authorization: Bearer mp_YOUR_TOKEN`
+
+Below are specific setup instructions for common clients.
+
+---
+
+##### Claude Code (CLI)
 
 **Option 1 — CLI command (quickest)**
 
@@ -256,8 +311,6 @@ export MEMPALACE_TOKEN=mp_YOUR_TOKEN
 
 **Option 3 — Global config (all projects)**
 
-Run the CLI command with the `--scope user` flag:
-
 ```bash
 claude mcp add --transport sse --scope user mempalace https://mempalace.yourdomain.com/sse \
   --header "Authorization: Bearer mp_YOUR_TOKEN"
@@ -265,13 +318,69 @@ claude mcp add --transport sse --scope user mempalace https://mempalace.yourdoma
 
 After adding, restart Claude Code. The 19 MemPalace tools will be available in every conversation.
 
-### Add to Claude Desktop or other clients (Bearer token)
+---
 
-Clients that support custom headers can use Bearer tokens directly (no OAuth needed).
-Create a token in the admin portal, then configure:
+##### Claude Desktop
 
-- **URL**: `https://mempalace.yourdomain.com/sse`
-- **Header**: `Authorization: Bearer mp_YOUR_TOKEN`
+Add to your `claude_desktop_config.json` (Settings → Developer → Edit Config):
+
+```json
+{
+  "mcpServers": {
+    "mempalace": {
+      "type": "sse",
+      "url": "https://mempalace.yourdomain.com/sse",
+      "headers": {
+        "Authorization": "Bearer mp_YOUR_TOKEN"
+      }
+    }
+  }
+}
+```
+
+Restart Claude Desktop to activate.
+
+---
+
+##### Cursor
+
+1. Open **Settings → MCP Servers → Add Server**
+2. Set the type to **SSE**
+3. Enter the URL: `https://mempalace.yourdomain.com/sse`
+4. Add the header: `Authorization: Bearer mp_YOUR_TOKEN`
+
+---
+
+##### n8n
+
+1. Add an **MCP Client** node to your workflow
+2. Set **SSE URL** to `https://mempalace.yourdomain.com/sse`
+3. Under **Authentication**, choose **Header Auth**
+4. Set header name to `Authorization` and value to `Bearer mp_YOUR_TOKEN`
+
+---
+
+##### Generic HTTP / custom clients
+
+Any client that supports SSE with custom headers can connect:
+
+```bash
+# Test the connection with curl
+curl -N -H "Authorization: Bearer mp_YOUR_TOKEN" \
+  https://mempalace.yourdomain.com/sse
+```
+
+---
+
+### Token management
+
+All tokens — whether created manually or issued via OAuth — are managed from the admin portal:
+
+- **View** all active and revoked tokens at `http://<SERVER-LAN-IP>:7892`
+- **Revoke** a token to immediately block access (the token remains in the database for audit)
+- **Delete** a token to remove it entirely
+- OAuth tokens are labeled `oauth:<client_name>` for easy identification
+- Each client should have its own token so you can revoke access per-client
 
 ---
 
