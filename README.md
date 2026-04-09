@@ -219,6 +219,52 @@ The bridge supports OAuth 2.1 with PKCE — Claude.ai handles the flow automatic
 
 OAuth tokens appear in the admin portal with the label `oauth:Claude.ai` and can be revoked like any other token.
 
+### Add to Claude Code (CLI)
+
+Create a token in the admin portal labeled `claude-code`, then use one of these methods:
+
+**Option 1 — CLI command (quickest)**
+
+```bash
+claude mcp add --transport sse mempalace https://mempalace.yourdomain.com/sse \
+  --header "Authorization: Bearer mp_YOUR_TOKEN"
+```
+
+**Option 2 — Project config (shared with team)**
+
+Create `.mcp.json` in your project root:
+
+```json
+{
+  "mcpServers": {
+    "mempalace": {
+      "type": "sse",
+      "url": "https://mempalace.yourdomain.com/sse",
+      "headers": {
+        "Authorization": "Bearer ${MEMPALACE_TOKEN}"
+      }
+    }
+  }
+}
+```
+
+Then set the environment variable before running Claude Code:
+
+```bash
+export MEMPALACE_TOKEN=mp_YOUR_TOKEN
+```
+
+**Option 3 — Global config (all projects)**
+
+Run the CLI command with the `--scope user` flag:
+
+```bash
+claude mcp add --transport sse --scope user mempalace https://mempalace.yourdomain.com/sse \
+  --header "Authorization: Bearer mp_YOUR_TOKEN"
+```
+
+After adding, restart Claude Code. The 19 MemPalace tools will be available in every conversation.
+
 ### Add to Claude Desktop or other clients (Bearer token)
 
 Clients that support custom headers can use Bearer tokens directly (no OAuth needed).
