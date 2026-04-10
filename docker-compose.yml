@@ -1,41 +1,29 @@
-# ─────────────────────────────────────────────────────────────────────────────
-#  MemPalace Bridge — docker-compose
-#
-#  Ports
-#  ─────
-#  7891  MCP SSE endpoint  →  expose via Cloudflare Tunnel
-#  7892  Admin portal      →  internal network only (never add to CF Tunnel)
-#
-#  Volume
-#  ──────
-#  /opt/mempalace on the host is the single source of truth.
-#  The ChromaDB palace data and the token DB both live there.
-#  Back up /opt/mempalace and you back up everything.
-#
-#  Env vars (override in .env or in environment: below)
-#  ────────────────────────────────────────────────────
-#  ADMIN_USER       admin username          (default: admin)
-#  ADMIN_PASSWORD   admin password          (CHANGE THIS)
-# ─────────────────────────────────────────────────────────────────────────────
-
 services:
 
   # ── MCP Bridge ─────────────────────────────────────────────────────────────
   mcp:
-    image: ghcr.io/carlosvargasvip/mempalace-mcp:latest
+    image: ghcr.io/korjavin/mempalace-mcp:latest
     command: python mcp_bridge.py
     restart: unless-stopped
-    ports:
-      - "0.0.0.0:7891:7891"          # reachable from Cloudflare Tunnel
+    networks:
+      - traefik_network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=${TRAEFIK_NETWORK_NAME:-traefik_default}"
+      - "traefik.http.routers.mempalace-mcp.rule=Host(`${HOSTNAME}`)"
+      - "traefik.http.routers.mempalace-mcp.entrypoints=websecure"
+      - "traefik.http.routers.mempalace-mcp.tls.certresolver=myresolver"
+      - "traefik.http.routers.mempalace-mcp.priority=100"
+      - "traefik.http.services.mempalace-mcp.loadbalancer.server.port=7891"
     volumes:
-      - /opt/mempalace:/palace       # host path → container mount
+      - /opt/mempalace:/palace
     environment:
-      PALACE_PATH:    /palace/data      # ChromaDB palace lives here
-      DB_PATH:        /palace/tokens.db # shared token DB
+      PALACE_PATH:    /palace/data
+      DB_PATH:        /palace/tokens.db
       MCP_PORT:       "7891"
       ADMIN_USER:     "${ADMIN_USER:-admin}"
       ADMIN_PASSWORD: "${ADMIN_PASSWORD:-changeme}"
-      PUBLIC_URL:     "${PUBLIC_URL:-}"  # e.g. https://mempalace.yourdomain.com
+      PUBLIC_URL:     "${PUBLIC_URL:-}"
     healthcheck:
       test:  ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:7891/health')"]
       interval: 30s
@@ -44,17 +32,30 @@ services:
 
   # ── Admin Portal ────────────────────────────────────────────────────────────
   admin:
-    image: ghcr.io/carlosvargasvip/mempalace-mcp:latest
+    image: ghcr.io/korjavin/mempalace-mcp:latest
     command: python admin_server.py
     restart: unless-stopped
-    ports:
-      - "0.0.0.0:7892:7892"          # internal network only — NOT via CF Tunnel
+    networks:
+      - traefik_network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=${TRAEFIK_NETWORK_NAME:-traefik_default}"
+      - "traefik.http.routers.mempalace-admin.rule=Host(`${HOSTNAME}`) && (Path(`/`) || PathPrefix(`/api/tokens`))"
+      - "traefik.http.routers.mempalace-admin.entrypoints=websecure"
+      - "traefik.http.routers.mempalace-admin.tls.certresolver=myresolver"
+      - "traefik.http.routers.mempalace-admin.priority=200"
+      - "traefik.http.services.mempalace-admin.loadbalancer.server.port=7892"
     volumes:
-      - /opt/mempalace:/palace       # same volume — same tokens.db
+      - /opt/mempalace:/palace
     environment:
       DB_PATH:        /palace/tokens.db
       ADMIN_PORT:     "7892"
       ADMIN_USER:     "${ADMIN_USER:-admin}"
-      ADMIN_PASSWORD: "${ADMIN_PASSWORD:-changeme}"   # override via .env !
+      ADMIN_PASSWORD: "${ADMIN_PASSWORD:-changeme}"
     depends_on:
       - mcp
+
+networks:
+  traefik_network:
+    external: true
+    name: ${TRAEFIK_NETWORK_NAME:-traefik_default}
