@@ -2,7 +2,7 @@ services:
 
   # ── MCP Bridge ─────────────────────────────────────────────────────────────
   mcp:
-    image: ghcr.io/korjavin/mempalace-mcp:latest
+    image: ghcr.io/korjavin/mempalace-mcp:1779b0fba25c51d45a48e4f310f761cee55c82ca
     command: python mcp_bridge.py
     restart: unless-stopped
     networks:
@@ -33,7 +33,7 @@ services:
 
   # ── Admin Portal ────────────────────────────────────────────────────────────
   admin:
-    image: ghcr.io/korjavin/mempalace-mcp:latest
+    image: ghcr.io/korjavin/mempalace-mcp:1779b0fba25c51d45a48e4f310f761cee55c82ca
     command: python admin_server.py
     restart: unless-stopped
     networks:
