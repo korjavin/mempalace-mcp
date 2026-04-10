@@ -19,6 +19,7 @@ services:
       - /opt/mempalace:/palace
     environment:
       PALACE_PATH:    /palace/data
+      MEMPALACE_PALACE_PATH: /palace/data
       DB_PATH:        /palace/tokens.db
       MCP_PORT:       "7891"
       ADMIN_USER:     "${ADMIN_USER:-admin}"
