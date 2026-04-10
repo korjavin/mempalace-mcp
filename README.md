@@ -31,7 +31,7 @@ Claude.ai / Cursor / n8n
 Pre-built images are published to GitHub Container Registry on every push to `main`:
 
 ```
-ghcr.io/carlosvargasvip/mempalace-mcp:latest
+ghcr.io/<your-username>/mempalace-mcp:latest
 ```
 
 ---
@@ -41,7 +41,7 @@ ghcr.io/carlosvargasvip/mempalace-mcp:latest
 The fastest path. One script handles everything.
 
 ```bash
-git clone https://github.com/carlosvargasvip/mempalace-mcp.git
+git clone https://github.com/<your-username>/mempalace-mcp.git
 cd mempalace-mcp
 ./deploy.sh
 ```
@@ -79,7 +79,7 @@ Run the init command inside the container (no need to install anything on the ho
 
 ```bash
 echo "" | docker run --rm -i -v /opt/mempalace:/palace \
-  ghcr.io/carlosvargasvip/mempalace-mcp:latest \
+  ghcr.io/<your-username>/mempalace-mcp:latest \
   mempalace init /palace/data
 ```
 
@@ -89,7 +89,7 @@ Optionally mine your existing Claude.ai exports:
 docker run --rm \
   -v /opt/mempalace:/palace \
   -v ~/Downloads/claude-exports:/exports:ro \
-  ghcr.io/carlosvargasvip/mempalace-mcp:latest \
+  ghcr.io/<your-username>/mempalace-mcp:latest \
   mempalace mine /exports --palace /palace/data
 ```
 
@@ -107,7 +107,7 @@ docker compose up -d
 
 1. In Portainer, go to **Stacks → Add stack**
 2. Choose **Repository** and enter:
-   - **Repository URL**: `https://github.com/carlosvargasvip/mempalace-mcp`
+   - **Repository URL**: `https://github.com/<your-username>/mempalace-mcp`
    - **Branch**: `main`
    - **Compose path**: `docker-compose.yml`
 3. Under **Environment variables**, add:
@@ -125,7 +125,7 @@ If you prefer not to link a repository, go to **Stacks → Add stack → Web edi
 ```yaml
 services:
   mcp:
-    image: ghcr.io/carlosvargasvip/mempalace-mcp:latest
+    image: ghcr.io/<your-username>/mempalace-mcp:latest
     command: python mcp_bridge.py
     restart: unless-stopped
     ports:
@@ -146,7 +146,7 @@ services:
       retries: 3
 
   admin:
-    image: ghcr.io/carlosvargasvip/mempalace-mcp:latest
+    image: ghcr.io/<your-username>/mempalace-mcp:latest
     command: python admin_server.py
     restart: unless-stopped
     ports:
@@ -171,7 +171,7 @@ Run this from the Portainer host or via **Containers → mcp → Console**:
 
 ```bash
 echo "" | docker run --rm -i -v /opt/mempalace:/palace \
-  ghcr.io/carlosvargasvip/mempalace-mcp:latest \
+  ghcr.io/<your-username>/mempalace-mcp:latest \
   mempalace init /palace/data
 ```
 
